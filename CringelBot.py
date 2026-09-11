@@ -198,6 +198,8 @@ class MyClient(discord.Client):
             for i, track in enumerate(reversed(queues[guild_id])):
                 reply += f"**{i+1}: ** {track['title']} by {track['artist']}.\n"
             await message.channel.send(reply)
+        if message.content == "Yo yo yo cringelbot":
+            await message.channel.send(f"Wassap crazy crew! I'm just here to bring the vibes (and the chips) I'm ready to become a core member of this group, I heard there was an opening")
 
 
         
