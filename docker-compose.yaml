@@ -1,6 +1,7 @@
 services:
   cringelbot:
-  build: .
-  restart: unless-stopped
-  env_file:
-    - .env
+    build: .
+    container_name: cringelbot
+    restart: unless-stopped
+    env_file:
+      - .env

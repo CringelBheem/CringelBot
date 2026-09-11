@@ -9,22 +9,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-play_queue = []
-current_title = ""
-current_artist = ""
+queues = {}
+now_playing = {}
 
-def use_queue(voice):
-    global current_title
-    global current_artist
-    if len(play_queue) > 0:
-        next_queue = play_queue.pop()
+
+def use_queue(voice, guild_id):
+    if len(queues[guild_id]) > 0:
+        next_queue = queues[guild_id].pop()
         next_track = next_queue["id"]
-        current_title = next_queue["title"]
-        current_artist = next_queue["artist"]
+        now_playing[guild_id]["title"] = next_queue["title"]
+        now_playing[guild_id]["artist"] = next_queue["artist"]
         url = build_stream_url(next_track)         
         source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-        voice.play(source, after=lambda e:use_queue(voice))
-    else: return
+        voice.play(source, after=lambda e:use_queue(voice, guild_id))
+    else:
+        if guild_id in now_playing:
+            now_playing[guild_id]["title"] = ""
+            now_playing[guild_id]["artist"]= ""
+        return
 
 def generate_token(password):
     salt = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(6))
@@ -83,10 +85,24 @@ class MyClient(discord.Client):
                 await message.channel.send("You must be in a voice channel.")
                 return
         if message.content == "!leave":
+            guild_id = message.guild.id
+            if guild_id in now_playing:
+                now_playing[guild_id]["title"] = ""
+                now_playing[guild_id]["artist"]= ""
+            if guild_id in queues:
+                queues[guild_id].clear()
             if message.guild.voice_client:
                 await message.guild.voice_client.disconnect()
                 await message.channel.send("Left the voice channel.")
         if message.content.startswith("!play "):
+            guild_id = message.guild.id
+            if guild_id not in queues:
+                queues[guild_id] = []
+            if guild_id not in now_playing:
+                now_playing[guild_id] = {
+                    "title": "",
+                    "artist": ""
+                    }
             voice = message.guild.voice_client
             query = message.content.split(" ", 1)[1]
 
@@ -110,17 +126,15 @@ class MyClient(discord.Client):
             track = songs[0]
             track_id = track["id"]
             if not voice.is_playing() and not voice.is_paused():
-                global current_title
-                global current_artist
                 url = build_stream_url(track_id)       
                 source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-                voice.play(source, after=lambda e:use_queue(voice))
-                current_title = track['title']
-                current_artist = track['artist']
+                voice.play(source, after=lambda e:use_queue(voice, guild_id))
+                now_playing[guild_id]["title"] = track['title']
+                now_playing[guild_id]["artist"] = track['artist']
                 await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
             else:
-                play_queue.insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
-                await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(play_queue)}")
+                queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
+                await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
 
         if message.content.startswith("!search "):
             query = message.content.split(" ", 1)[1]
@@ -149,8 +163,9 @@ class MyClient(discord.Client):
             voice.stop()
 
         if message.content.startswith("!stop"):
+            guild_id = message.guild.id
             await message.channel.send(f"Stopped all songs.")
-            play_queue.clear()
+            queues[guild_id].clear()
             voice = message.guild.voice_client
             voice.stop()
 
@@ -165,12 +180,22 @@ class MyClient(discord.Client):
             voice.resume()
 
         if message.content.startswith("!playing"):
-            await message.channel.send(f"**Currently playing**: {current_title} by {current_artist}.")
+            guild_id = message.guild.id
+            if (guild_id not in now_playing or now_playing[guild_id]["title"] == ""):
+                await message.channel.send("Nothing is currently playing.")
+                return
+            await message.channel.send(f"**Currently playing**: {now_playing[guild_id]['title']} by {now_playing[guild_id]['artist']}.")
 
         if message.content.startswith("!queue"):
-            reply = ""
-            reply += f"**Currently playing: ** {current_title} by {current_artist}.\n"
-            for i, track in enumerate(reversed(play_queue)):
+            guild_id = message.guild.id
+            if guild_id not in now_playing:
+                await message.channel.send("Nothing is currently playing.")
+                return
+            if now_playing[guild_id]["title"] == "":
+                await message.channel.send("Nothing is currently playing.")
+                return
+            reply = f"**Currently playing: ** {now_playing[guild_id]['title']} by {now_playing[guild_id]['artist']}.\n"
+            for i, track in enumerate(reversed(queues[guild_id])):
                 reply += f"**{i+1}: ** {track['title']} by {track['artist']}.\n"
             await message.channel.send(reply)
 
