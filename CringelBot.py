@@ -7,9 +7,9 @@ import string
 import os
 from dotenv import load_dotenv
 
+load_dotenv()
+
 play_queue = []
-
-
 current_title = ""
 current_artist = ""
 
