@@ -33,8 +33,8 @@ def generate_token(password):
     token = hashlib.md5((password + salt).encode('utf-8')).hexdigest()
     return token, salt
 
-def search_navidrome(query):
-    url = os.getenv("NAVIDROME_URL")+"/rest/search2"
+def search_navidrome(query, s_type):
+    url = os.getenv("NAVIDROME_URL")+f"/rest/{s_type}"
 
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
         
@@ -56,6 +56,7 @@ def search_navidrome(query):
     except KeyError:
         return []
 
+
 def build_stream_url(track_id):
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
 
@@ -69,7 +70,7 @@ def build_stream_url(track_id):
         f"&c=CringelBot"
     )
 
-#search_navidrome("Elton John")
+#search_navidrome("Elton John", "search2")
 
 class MyClient(discord.Client):
     async def on_ready(self):
@@ -116,7 +117,7 @@ class MyClient(discord.Client):
                     await message.channel.send("You must be in a voice channel.")
                     return
             
-            results = search_navidrome(query)
+            results = search_navidrome(query, "search2")
             songs = results.get("song", [])
 
             if not songs:
@@ -138,7 +139,7 @@ class MyClient(discord.Client):
 
         if message.content.startswith("!search "):
             query = message.content.split(" ", 1)[1]
-            results = search_navidrome(query)
+            results = search_navidrome(query, "search2")
             reply = ""
             artists = [a["name"] for a in results.get("artist", [])]
             albums = [a["name"] for a in results.get("album", [])]
@@ -198,8 +199,54 @@ class MyClient(discord.Client):
             for i, track in enumerate(reversed(queues[guild_id])):
                 reply += f"**{i+1}: ** {track['title']} by {track['artist']}.\n"
             await message.channel.send(reply)
+            
         if message.content == "Yo yo yo cringelbot":
             await message.channel.send(f"Wassap crazy crew! I'm just here to bring the vibes (and the chips) I'm ready to become a core member of this group, I heard there was an opening")
+
+        if message.content.startswith("!parrot "):
+            await message.channel.send(message.content[8:])
+
+        if message.content.startswith("!playalbum "):
+            guild_id = message.guild.id
+            if guild_id not in queues:
+                queues[guild_id] = []
+            if guild_id not in now_playing:
+                now_playing[guild_id] = {
+                    "title": "",
+                    "artist": ""
+                    }
+            voice = message.guild.voice_client
+            query = message.content.split(" ", 1)[1]
+
+            if not voice:
+                if message.author.voice:
+                    channel = message.author.voice.channel
+                    await channel.connect()
+                    await message.channel.send("Joined the voice channel.")
+                    voice = message.guild.voice_client
+                else:
+                    await message.channel.send("You must be in a voice channel.")
+                    return
+            
+            results = search_navidrome(query, "getAlbum")
+            songs = results.get("song", [])
+
+            if not songs:
+                await message.channel.send("No songs found.")
+                return
+            for song in songs:
+                track = song
+                track_id = track["id"]
+                if not voice.is_playing() and not voice.is_paused():
+                    url = build_stream_url(track_id)       
+                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
+                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
+                    now_playing[guild_id]["title"] = track['title']
+                    now_playing[guild_id]["artist"] = track['artist']
+                    await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
+                else:
+                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
+                    await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
 
 
         
