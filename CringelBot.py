@@ -54,7 +54,11 @@ def search_navidrome(query, s_type):
     try:
         return data["subsonic-response"]["searchResult2"]
     except KeyError:
-        return []
+        return {
+            "artist": [],
+            "album": [],
+            "song": []
+        }
 
 def search_album(query):
     url = os.getenv("NAVIDROME_URL")+f"/rest/getAlbum"
@@ -88,7 +92,7 @@ def search_album(query):
     except KeyError:
         return []
 
-#print(search_album("Madman"))
+print(search_album("Madman"))
 
 def build_stream_url(track_id):
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
@@ -266,6 +270,7 @@ class MyClient(discord.Client):
             if not songs:
                 await message.channel.send("No songs found.")
                 return
+            
             for song in songs:
                 track = song
                 track_id = track["id"]
