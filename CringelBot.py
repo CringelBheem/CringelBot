@@ -56,6 +56,39 @@ def search_navidrome(query, s_type):
     except KeyError:
         return []
 
+def search_album(query):
+    url = os.getenv("NAVIDROME_URL")+f"/rest/getAlbum"
+
+    token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
+     
+    results = search_navidrome(query, "search2")
+    albums = results.get("album", [])
+    if not albums:
+        return []
+    id = albums[0]["id"]
+
+
+    params = {
+            "id": id,
+            "u": "CringelBot",
+            "t": token,
+            "s": salt,
+            "v": "1.16.1",
+            "c": "Cringel Bot",
+            "f": "json",
+        }
+    
+
+    r = requests.get(url, params=params)
+    #print("STATUS:", r.status_code)
+    data = r.json()
+    #print("JSON RESPONSE:",data)
+    try:
+        return data["subsonic-response"]["album"]["song"]
+    except KeyError:
+        return []
+
+#print(search_album("Madman"))
 
 def build_stream_url(track_id):
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
@@ -228,8 +261,7 @@ class MyClient(discord.Client):
                     await message.channel.send("You must be in a voice channel.")
                     return
             
-            results = search_navidrome(query, "getAlbum")
-            songs = results.get("song", [])
+            songs = search_album(query)
 
             if not songs:
                 await message.channel.send("No songs found.")
