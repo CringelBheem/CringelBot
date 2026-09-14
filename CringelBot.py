@@ -137,7 +137,7 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("You must be in a voice channel.")
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content == "!leave":
             guild_id = message.guild.id
@@ -151,7 +151,7 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("Left the voice channel.")
             if silent[guild_id] == 1:
-                            message.delete()
+                await message.delete()
         if message.content.startswith("!play "):
             guild_id = initialise_globals(message)
             voice = message.guild.voice_client
@@ -176,7 +176,7 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("No songs found.")
                 elif silent[guild_id] == 1:
-                    message.delete()
+                    await message.delete()
                 return
 
             track = songs[0]
@@ -194,8 +194,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
             if silent[guild_id] == 1:
-                message.delete()
-
+                await message.delete()
+                
         if message.content.startswith("!search "):
             query = message.content.split(" ", 1)[1]
             results = search_navidrome(query, "search2")
@@ -223,7 +223,7 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.stop()
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content.startswith("!stop"):
             guild_id = message.guild.id
@@ -233,7 +233,7 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.stop()
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content.startswith("!pause"):
             if silent[guild_id] == 0:
@@ -241,7 +241,7 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.pause()
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content.startswith("!resume"):
             if silent[guild_id] == 0:
@@ -249,7 +249,7 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.resume()
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content.startswith("!playing"):
             guild_id = message.guild.id
@@ -300,7 +300,7 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("No songs found.")
                 elif silent[guild_id] == 1:
-                    message.delete()
+                    await message.delete()
                 return
             
             for song in songs:
@@ -319,7 +319,7 @@ class MyClient(discord.Client):
                     if silent[guild_id] == 0:
                         await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
             if silent[guild_id] == 1:
-                message.delete()
+                await message.delete()
 
         if message.content == ("!silent"):
             guild_id = initialise_globals(message)
