@@ -332,7 +332,7 @@ class MyClient(discord.Client):
                 await message.channel.send(f"Silent mode off.")
             else:
                 silent[guild_id] = 1
-                await message.add_reaction(":white_check_mark:")
+                await message.add_reaction("✅")
                 await message.delete(delay=10)
 
         
