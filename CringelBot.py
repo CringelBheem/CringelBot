@@ -38,7 +38,7 @@ def initialise_globals(message):
             "artist": ""
             }
     if guild_id not in silent:
-        silent[guild_id] = []
+        silent[guild_id] = 0
     return guild_id
 
 def generate_token(password):
@@ -128,6 +128,7 @@ class MyClient(discord.Client):
 
     async def on_message(self, message):
         if message.content.startswith("!join"):
+            guild_id = initialise_globals(message)
             if message.author.voice:
                 channel = message.author.voice.channel
                 await channel.connect()
@@ -140,7 +141,7 @@ class MyClient(discord.Client):
                 await message.delete()
 
         if message.content == "!leave":
-            guild_id = message.guild.id
+            guild_id = initialise_globals(message)
             if guild_id in now_playing:
                 now_playing[guild_id]["title"] = ""
                 now_playing[guild_id]["artist"]= ""
@@ -218,6 +219,7 @@ class MyClient(discord.Client):
             await message.channel.send(reply)
 
         if message.content.startswith("!skip"):
+            guild_id = initialise_globals(message)
             if silent[guild_id] == 0:
                 await message.channel.send(f"Skipping track.")
             voice = message.guild.voice_client
@@ -226,7 +228,7 @@ class MyClient(discord.Client):
                 await message.delete()
 
         if message.content.startswith("!stop"):
-            guild_id = message.guild.id
+            guild_id = initialise_globals(message)
             if silent[guild_id] == 0:
                 await message.channel.send(f"Stopped all songs.")
             queues[guild_id].clear()
@@ -236,6 +238,7 @@ class MyClient(discord.Client):
                 await message.delete()
 
         if message.content.startswith("!pause"):
+            guild_id = initialise_globals(message)
             if silent[guild_id] == 0:
                 await message.channel.send(f"Paused.")
             voice = message.guild.voice_client
@@ -244,6 +247,7 @@ class MyClient(discord.Client):
                 await message.delete()
 
         if message.content.startswith("!resume"):
+            guild_id = initialise_globals(message)
             if silent[guild_id] == 0:
                 await message.channel.send(f"Resuming.")
             voice = message.guild.voice_client
