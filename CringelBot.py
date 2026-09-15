@@ -163,7 +163,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("You must be in a voice channel.")
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content == "!leave":
             guild_id = initialise_globals(message)
@@ -177,7 +178,9 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("Left the voice channel.")
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
+                
         if message.content.startswith("!play "):
             guild_id = initialise_globals(message)
             voice = message.guild.voice_client
@@ -202,7 +205,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("No songs found.")
                 elif silent[guild_id] == 1:
-                    await message.delete()
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)
                 return
 
             track = songs[0]
@@ -220,7 +224,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
                 
         if message.content.startswith("!search "):
             query = message.content.split(" ", 1)[1]
@@ -250,7 +255,8 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.stop()
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content.startswith("!stop"):
             guild_id = initialise_globals(message)
@@ -260,7 +266,8 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.stop()
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content.startswith("!pause"):
             guild_id = initialise_globals(message)
@@ -269,7 +276,8 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.pause()
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content.startswith("!resume"):
             guild_id = initialise_globals(message)
@@ -278,7 +286,8 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
             voice.resume()
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content.startswith("!playing"):
             guild_id = message.guild.id
@@ -329,7 +338,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("No songs found.")
                 elif silent[guild_id] == 1:
-                    await message.delete()
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)
                 return
             
             for song in songs:
@@ -348,7 +358,8 @@ class MyClient(discord.Client):
                     if silent[guild_id] == 0:
                         await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
             if silent[guild_id] == 1:
-                await message.delete()
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content == ("!silent"):
             guild_id = initialise_globals(message)
@@ -359,10 +370,64 @@ class MyClient(discord.Client):
             else:
                 silent[guild_id] = 1
                 await message.add_reaction("✅")
-                await message.delete(delay=5)
+                await message.delete(delay=2)
 
         if message.content == ("!playalbum"):
-            return
+            guild_id = initialise_globals(message)
+            voice = message.guild.voice_client
+
+            if not voice:
+                if message.author.voice:
+                    channel = message.author.voice.channel
+                    await channel.connect()
+                    if silent[guild_id] == 0:
+                        await message.channel.send("Joined the voice channel.")
+                    voice = message.guild.voice_client
+                else:
+                    if silent[guild_id] == 0:
+                        await message.channel.send("You must be in a voice channel.")
+                    return
+            
+            randsong = search_random(1)
+
+            if not randsong:
+                if silent[guild_id] == 0:
+                    await message.channel.send("No albums found.")
+                elif silent[guild_id] == 1:
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)
+                return
+            
+            album = songs["album"]
+
+            songs = search_album(album)
+
+            if not songs:
+                if silent[guild_id] == 0:
+                    await message.channel.send("No songs found.")
+                elif silent[guild_id] == 1:
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)
+                return
+            
+            for song in songs:
+                track = song
+                track_id = track["id"]
+                if not voice.is_playing() and not voice.is_paused():
+                    url = build_stream_url(track_id)       
+                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
+                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
+                    now_playing[guild_id]["title"] = track['title']
+                    now_playing[guild_id]["artist"] = track['artist']
+                    if silent[guild_id] == 0:
+                        await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
+                else:
+                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
+                    if silent[guild_id] == 0:
+                        await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+            if silent[guild_id] == 1:
+                await message.add_reaction("✅")
+                await message.delete(delay=2)
 
         if message.content.startswith("!playrandom"):
             guild_id = initialise_globals(message)
@@ -390,7 +455,8 @@ class MyClient(discord.Client):
                 if silent[guild_id] == 0:
                     await message.channel.send("No songs found.")
                 elif silent[guild_id] == 1:
-                    await message.delete()
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)
                 return
             
             for song in songs:
@@ -409,7 +475,8 @@ class MyClient(discord.Client):
                     if silent[guild_id] == 0:
                         await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
             if silent[guild_id] == 1:
-                await message.delete()           
+                await message.add_reaction("✅")
+                await message.delete(delay=2)       
 
         
 
