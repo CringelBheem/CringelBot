@@ -398,7 +398,7 @@ class MyClient(discord.Client):
                     await message.delete(delay=2)
                 return
             
-            album = songs["album"]
+            album = randsong["album"]
 
             songs = search_album(album)
 
