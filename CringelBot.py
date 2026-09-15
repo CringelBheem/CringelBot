@@ -126,7 +126,7 @@ def search_random(size):
     data = r.json()
     #print("JSON RESPONSE:",data)
     try:
-        return data["subsonic-response"]["randomSongs"]
+        return data["subsonic-response"]["randomSongs"]["song"]
     except KeyError:
         return []
 
