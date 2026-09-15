@@ -105,7 +105,32 @@ def search_album(query):
     except KeyError:
         return []
 
-print(search_album("Madman"))
+def search_random(size):
+    url = os.getenv("NAVIDROME_URL")+f"/rest/getRandomSongs"
+
+    token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
+
+    params = {
+            "size": size if size else 1,
+            "u": "CringelBot",
+            "t": token,
+            "s": salt,
+            "v": "1.16.1",
+            "c": "Cringel Bot",
+            "f": "json",
+        }
+    
+
+    r = requests.get(url, params=params)
+    #print("STATUS:", r.status_code)
+    data = r.json()
+    #print("JSON RESPONSE:",data)
+    try:
+        return data["subsonic-response"]["randomSongs"]
+    except KeyError:
+        return []
+
+#print(search_album("Madman"))
 
 def build_stream_url(track_id):
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
@@ -329,13 +354,62 @@ class MyClient(discord.Client):
             guild_id = initialise_globals(message)
             if silent[guild_id] == 1:
                 silent[guild_id] = 0
+                await message.add_reaction("✅")
                 await message.channel.send(f"Silent mode off.")
             else:
                 silent[guild_id] = 1
                 await message.add_reaction("✅")
-                await message.delete(delay=10)
+                await message.delete(delay=5)
 
-        
+        if message.content == ("!playalbum"):
+            return
+
+        if message.content.startswith("!playrandom"):
+            guild_id = initialise_globals(message)
+            voice = message.guild.voice_client
+            try:
+                size = int(message.content.split(" ", 1)[1])
+            except (IndexError, ValueError):
+                size = None
+
+            if not voice:
+                if message.author.voice:
+                    channel = message.author.voice.channel
+                    await channel.connect()
+                    if silent[guild_id] == 0:
+                        await message.channel.send("Joined the voice channel.")
+                    voice = message.guild.voice_client
+                else:
+                    if silent[guild_id] == 0:
+                        await message.channel.send("You must be in a voice channel.")
+                    return
+            
+            songs = search_random(size)
+
+            if not songs:
+                if silent[guild_id] == 0:
+                    await message.channel.send("No songs found.")
+                elif silent[guild_id] == 1:
+                    await message.delete()
+                return
+            
+            for song in songs:
+                track = song
+                track_id = track["id"]
+                if not voice.is_playing() and not voice.is_paused():
+                    url = build_stream_url(track_id)       
+                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
+                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
+                    now_playing[guild_id]["title"] = track['title']
+                    now_playing[guild_id]["artist"] = track['artist']
+                    if silent[guild_id] == 0:
+                        await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
+                else:
+                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
+                    if silent[guild_id] == 0:
+                        await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+            if silent[guild_id] == 1:
+                await message.delete()           
 
         
 
