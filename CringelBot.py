@@ -120,6 +120,21 @@ def search_album(query):
     except KeyError:
         return []
 
+async def join_check(message, guild_id):
+    if message.author.voice:
+        channel = message.author.voice.channel
+        await channel.connect()
+        if silent[guild_id] == 0:
+            await message.channel.send("Joined the voice channel.")
+        return True
+    else:
+        if silent[guild_id] == 0:
+            await message.channel.send("You must be in a voice channel.")
+        elif silent[guild_id] == 1:
+            await message.add_reaction("❌")
+            await message.delete(delay=2)
+        return False
+
 def search_random(size):
     url = os.getenv("NAVIDROME_URL")+f"/rest/getRandomSongs"
 
@@ -169,17 +184,7 @@ class MyClient(discord.Client):
     async def on_message(self, message):
         if message.content.startswith("!join"):
             guild_id = initialise_globals(message)
-            if message.author.voice:
-                channel = message.author.voice.channel
-                await channel.connect()
-                if silent[guild_id] == 0:
-                    await message.channel.send("Joined the voice channel.")
-            else:
-                if silent[guild_id] == 0:
-                    await message.channel.send("You must be in a voice channel.")
-                elif silent[guild_id] == 1:
-                    await message.add_reaction("❌")
-                    await message.delete(delay=2)                        
+            await join_check(message, guild_id)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -205,19 +210,10 @@ class MyClient(discord.Client):
             query = message.content.split(" ", 1)[1]
 
             if not voice:
-                if message.author.voice:
-                    channel = message.author.voice.channel
-                    await channel.connect()
-                    if silent[guild_id] == 0:
-                        await message.channel.send("Joined the voice channel.")
-                    voice = message.guild.voice_client
-                else:
-                    if silent[guild_id] == 0:
-                        await message.channel.send("You must be in a voice channel.")
-                    elif silent[guild_id] == 1:
-                        await message.add_reaction("❌")
-                        await message.delete(delay=2)                            
+                joined = await join_check(message, guild_id)
+                if not joined:
                     return
+                voice = message.guild.voice_client
             
             results = search_navidrome(query, "search2")
             songs = results.get("song", [])
@@ -331,19 +327,10 @@ class MyClient(discord.Client):
             query = message.content.split(" ", 1)[1]
 
             if not voice:
-                if message.author.voice:
-                    channel = message.author.voice.channel
-                    await channel.connect()
-                    if silent[guild_id] == 0:
-                        await message.channel.send("Joined the voice channel.")
-                    voice = message.guild.voice_client
-                else:
-                    if silent[guild_id] == 0:
-                        await message.channel.send("You must be in a voice channel.")
-                    elif silent[guild_id] == 1:
-                        await message.add_reaction("❌")
-                        await message.delete(delay=2)                        
+                joined = await join_check(message, guild_id)
+                if not joined:
                     return
+                voice = message.guild.voice_client
             
             songs = search_album(query)
 
@@ -357,7 +344,7 @@ class MyClient(discord.Client):
             
             for song in songs:
                 track = song
-                add_track(voice, message, guild_id, track)
+                await add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -378,19 +365,10 @@ class MyClient(discord.Client):
             voice = message.guild.voice_client
 
             if not voice:
-                if message.author.voice:
-                    channel = message.author.voice.channel
-                    await channel.connect()
-                    if silent[guild_id] == 0:
-                        await message.channel.send("Joined the voice channel.")
-                    voice = message.guild.voice_client
-                else:
-                    if silent[guild_id] == 0:
-                        await message.channel.send("You must be in a voice channel.")
-                    elif silent[guild_id] == 1:
-                        await message.add_reaction("❌")
-                        await message.delete(delay=2)                        
+                joined = await join_check(message, guild_id)
+                if not joined:
                     return
+                voice = message.guild.voice_client
             
             randsong = search_random(1)
 
@@ -430,19 +408,10 @@ class MyClient(discord.Client):
                 size = None
 
             if not voice:
-                if message.author.voice:
-                    channel = message.author.voice.channel
-                    await channel.connect()
-                    if silent[guild_id] == 0:
-                        await message.channel.send("Joined the voice channel.")
-                    voice = message.guild.voice_client
-                else:
-                    if silent[guild_id] == 0:
-                        await message.channel.send("You must be in a voice channel.")
-                    elif silent[guild_id] == 1:
-                        await message.add_reaction("❌")
-                        await message.delete(delay=2)                            
+                joined = await join_check(message, guild_id)
+                if not joined:
                     return
+                voice = message.guild.voice_client
             
             songs = search_random(size)
 
@@ -456,7 +425,7 @@ class MyClient(discord.Client):
             
             for song in songs:
                 track = song
-                add_track(voice, message, guild_id, track)
+                await add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)       
