@@ -28,6 +28,21 @@ def use_queue(voice, guild_id):
             now_playing[guild_id]["artist"]= ""
         return
 
+async def add_track(voice, message, guild_id, track):
+    track_id = track["id"]
+    if not voice.is_playing() and not voice.is_paused():
+        url = build_stream_url(track_id)       
+        source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
+        voice.play(source, after=lambda e:use_queue(voice, guild_id))
+        now_playing[guild_id]["title"] = track['title']
+        now_playing[guild_id]["artist"] = track['artist']
+        if silent[guild_id] == 0:
+            await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
+    else:
+        queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
+        if silent[guild_id] == 0:
+            await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+
 def initialise_globals(message):
     guild_id = message.guild.id
     if guild_id not in queues:
@@ -162,6 +177,9 @@ class MyClient(discord.Client):
             else:
                 if silent[guild_id] == 0:
                     await message.channel.send("You must be in a voice channel.")
+                elif silent[guild_id] == 1:
+                    await message.add_reaction("❌")
+                    await message.delete(delay=2)                        
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -196,6 +214,9 @@ class MyClient(discord.Client):
                 else:
                     if silent[guild_id] == 0:
                         await message.channel.send("You must be in a voice channel.")
+                    elif silent[guild_id] == 1:
+                        await message.add_reaction("❌")
+                        await message.delete(delay=2)                            
                     return
             
             results = search_navidrome(query, "search2")
@@ -210,19 +231,7 @@ class MyClient(discord.Client):
                 return
 
             track = songs[0]
-            track_id = track["id"]
-            if not voice.is_playing() and not voice.is_paused():
-                url = build_stream_url(track_id)       
-                source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-                voice.play(source, after=lambda e:use_queue(voice, guild_id))
-                now_playing[guild_id]["title"] = track['title']
-                now_playing[guild_id]["artist"] = track['artist']
-                if silent[guild_id] == 0:
-                    await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
-            else:
-                queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
-                if silent[guild_id] == 0:
-                    await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+            await add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -314,6 +323,7 @@ class MyClient(discord.Client):
 
         if message.content.startswith("!parrot "):
             await message.channel.send(message.content[8:])
+            await message.delete()
 
         if message.content.startswith("!playalbum "):
             guild_id = initialise_globals(message)
@@ -330,6 +340,9 @@ class MyClient(discord.Client):
                 else:
                     if silent[guild_id] == 0:
                         await message.channel.send("You must be in a voice channel.")
+                    elif silent[guild_id] == 1:
+                        await message.add_reaction("❌")
+                        await message.delete(delay=2)                        
                     return
             
             songs = search_album(query)
@@ -344,19 +357,7 @@ class MyClient(discord.Client):
             
             for song in songs:
                 track = song
-                track_id = track["id"]
-                if not voice.is_playing() and not voice.is_paused():
-                    url = build_stream_url(track_id)       
-                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
-                    now_playing[guild_id]["title"] = track['title']
-                    now_playing[guild_id]["artist"] = track['artist']
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
-                else:
-                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+                add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -386,6 +387,9 @@ class MyClient(discord.Client):
                 else:
                     if silent[guild_id] == 0:
                         await message.channel.send("You must be in a voice channel.")
+                    elif silent[guild_id] == 1:
+                        await message.add_reaction("❌")
+                        await message.delete(delay=2)                        
                     return
             
             randsong = search_random(1)
@@ -412,19 +416,7 @@ class MyClient(discord.Client):
             
             for song in songs:
                 track = song
-                track_id = track["id"]
-                if not voice.is_playing() and not voice.is_paused():
-                    url = build_stream_url(track_id)       
-                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
-                    now_playing[guild_id]["title"] = track['title']
-                    now_playing[guild_id]["artist"] = track['artist']
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
-                else:
-                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+                await add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)
@@ -447,6 +439,9 @@ class MyClient(discord.Client):
                 else:
                     if silent[guild_id] == 0:
                         await message.channel.send("You must be in a voice channel.")
+                    elif silent[guild_id] == 1:
+                        await message.add_reaction("❌")
+                        await message.delete(delay=2)                            
                     return
             
             songs = search_random(size)
@@ -461,19 +456,7 @@ class MyClient(discord.Client):
             
             for song in songs:
                 track = song
-                track_id = track["id"]
-                if not voice.is_playing() and not voice.is_paused():
-                    url = build_stream_url(track_id)       
-                    source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
-                    voice.play(source, after=lambda e:use_queue(voice, guild_id))
-                    now_playing[guild_id]["title"] = track['title']
-                    now_playing[guild_id]["artist"] = track['artist']
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
-                else:
-                    queues[guild_id].insert(0, {"id": track_id, "title": track['title'], "artist": track['artist']})
-                    if silent[guild_id] == 0:
-                        await message.channel.send(f"Added: {track['title']} by {track['artist']} to queue. Position: {len(queues[guild_id])}")
+                add_track(voice, message, guild_id, track)
             if silent[guild_id] == 1:
                 await message.add_reaction("✅")
                 await message.delete(delay=2)       
