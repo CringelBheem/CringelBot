@@ -434,12 +434,16 @@ class MyClient(discord.Client):
             guild_id = initialise_globals(message)
             voice = message.guild.voice_client
             track_id = None
-            try:
-                size = int(message.content.split(" ", 2)[1])
-                query = message.content.split(" ", 2)[2]
-            except (IndexError, ValueError):
-                size = None
-                query = None
+            size = None
+            query = None
+            command_parts = message.content.split(" ", 2)
+            if len(command_parts) >= 2:
+                try:
+                    size = int(command_parts[1])
+                except ValueError:
+                    query = command_parts[1]
+            if len(command_parts) >= 3:
+                query = command_parts[2]
 
             if query:
                 results = search_navidrome(query, "search2")
@@ -462,6 +466,8 @@ class MyClient(discord.Client):
                     return
             
             songs = search_similar(track_id, size)
+            print("size =", size)
+            print("songs returned =", len(songs))
 
             if not songs:
                 await error_response("No songs found.", guild_id, message)
