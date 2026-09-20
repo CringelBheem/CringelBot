@@ -19,6 +19,7 @@ def use_queue(voice, guild_id):
         next_track = next_queue["id"]
         now_playing[guild_id]["title"] = next_queue["title"]
         now_playing[guild_id]["artist"] = next_queue["artist"]
+        now_playing[guild_id]["track_id"] = next_queue["id"]
         url = build_stream_url(next_track)         
         source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
         voice.play(source, after=lambda e:use_queue(voice, guild_id))
@@ -26,6 +27,7 @@ def use_queue(voice, guild_id):
         if guild_id in now_playing:
             now_playing[guild_id]["title"] = ""
             now_playing[guild_id]["artist"]= ""
+            now_playing[guild_id]["track_id"]= ""
         return
 
 async def add_track(voice, message, guild_id, track):
@@ -36,6 +38,7 @@ async def add_track(voice, message, guild_id, track):
         voice.play(source, after=lambda e:use_queue(voice, guild_id))
         now_playing[guild_id]["title"] = track['title']
         now_playing[guild_id]["artist"] = track['artist']
+        now_playing[guild_id]["track_id"] = track_id
         if silent[guild_id] == 0:
             await message.channel.send(f"Playing: {track['title']} by {track['artist']}")
     else:
@@ -50,7 +53,8 @@ def initialise_globals(message):
     if guild_id not in now_playing:
         now_playing[guild_id] = {
             "title": "",
-            "artist": ""
+            "artist": "",
+            "track_id": ""
             }
     if guild_id not in silent:
         silent[guild_id] = 0
@@ -156,6 +160,32 @@ def search_random(size):
     except KeyError:
         return []
 
+def search_similar(track_id, size):
+    url = os.getenv("NAVIDROME_URL")+f"/rest/getSimilarSongs"
+
+    token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
+
+    params = {
+            "id": track_id,
+            "size": size if size else 1,
+            "u": "CringelBot",
+            "t": token,
+            "s": salt,
+            "v": "1.16.1",
+            "c": "Cringel Bot",
+            "f": "json",
+        }
+    
+
+    r = requests.get(url, params=params)
+    #print("STATUS:", r.status_code)
+    data = r.json()
+    #print("JSON RESPONSE:",data)
+    try:
+        return data["subsonic-response"]["similarSongs"]["song"]
+    except KeyError:
+        return []
+
 async def silent_response(guild_id, message):
     if silent[guild_id] == 1:
         await message.add_reaction("✅")
@@ -167,8 +197,6 @@ async def error_response(text, guild_id, message):
     elif silent[guild_id] == 1:
         await message.add_reaction("❌")
         await message.delete(delay=2)
-
-#print(search_album("Madman"))
 
 def build_stream_url(track_id):
     token, salt = generate_token(os.getenv("NAVIDROME_PASSWORD"))
@@ -182,6 +210,8 @@ def build_stream_url(track_id):
         f"&v=1.16.1"
         f"&c=CringelBot"
     )
+
+#print(search_album("Madman"))
 
 #search_navidrome("Elton John", "search2")
 
@@ -200,6 +230,7 @@ class MyClient(discord.Client):
             if guild_id in now_playing:
                 now_playing[guild_id]["title"] = ""
                 now_playing[guild_id]["artist"]= ""
+                now_playing[guild_id]["track_id"]= ""
             if guild_id in queues:
                 queues[guild_id].clear()
             if message.guild.voice_client:
@@ -333,8 +364,7 @@ class MyClient(discord.Client):
                 return
             
             for song in songs:
-                track = song
-                await add_track(voice, message, guild_id, track)
+                await add_track(voice, message, guild_id, song)
             await silent_response(guild_id, message)
 
         if message.content == ("!silent"):
@@ -373,8 +403,7 @@ class MyClient(discord.Client):
                 return
             
             for song in songs:
-                track = song
-                await add_track(voice, message, guild_id, track)
+                await add_track(voice, message, guild_id, song)
             await silent_response(guild_id, message)
 
         if message.content.startswith("!playrandom"):
@@ -398,9 +427,49 @@ class MyClient(discord.Client):
                 return
             
             for song in songs:
-                track = song
-                await add_track(voice, message, guild_id, track)
-            await silent_response(guild_id, message)     
+                await add_track(voice, message, guild_id, song)
+            await silent_response(guild_id, message)
+
+        if message.content.startswith("!playsimilar"):
+            guild_id = initialise_globals(message)
+            voice = message.guild.voice_client
+            track_id = None
+            try:
+                size = int(message.content.split(" ", 2)[1])
+                query = message.content.split(" ", 2)[2]
+            except (IndexError, ValueError):
+                size = None
+                query = None
+
+            if query:
+                results = search_navidrome(query, "search2")
+                searched_songs = results.get("song", [])
+                if not searched_songs:
+                    await error_response("No songs found.", guild_id, message)
+                    return
+                track_id = searched_songs[0]["id"]
+
+            if not voice:
+                joined = await join_check(message, guild_id)
+                if not joined:
+                    return
+                voice = message.guild.voice_client
+
+            if not track_id:
+                track_id = now_playing[guild_id]["track_id"]
+                if not track_id:
+                    await error_response("Nothing is currently playing.", guild_id, message)
+                    return
+            
+            songs = search_similar(track_id, size)
+
+            if not songs:
+                await error_response("No songs found.", guild_id, message)
+                return
+            
+            for song in songs:
+                await add_track(voice, message, guild_id, song)
+            await silent_response(guild_id, message)
 
         
 
