@@ -167,7 +167,7 @@ def search_similar(track_id, size):
 
     params = {
             "id": track_id,
-            "size": size if size else 1,
+            "count": size if size else 1,
             "u": "CringelBot",
             "t": token,
             "s": salt,
@@ -429,7 +429,7 @@ class MyClient(discord.Client):
             for song in songs:
                 await add_track(voice, message, guild_id, song)
             await silent_response(guild_id, message)
-
+        """
         if message.content.startswith("!playsimilar"):
             guild_id = initialise_globals(message)
             voice = message.guild.voice_client
@@ -475,9 +475,8 @@ class MyClient(discord.Client):
             
             for song in songs:
                 await add_track(voice, message, guild_id, song)
-            await silent_response(guild_id, message)
+            await silent_response(guild_id, message)"""
 
-        
 
 intents = discord.Intents.default()
 intents.message_content = True
