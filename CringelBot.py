@@ -222,7 +222,12 @@ class MyClient(discord.Client):
     async def on_message(self, message):
         if message.content.startswith("!join"):
             guild_id = initialise_globals(message)
-            await join_check(message, guild_id)
+            voice = message.guild.voice_client
+            if not voice:
+                joined = await join_check(message, guild_id)
+
+                if not joined:
+                    return
             await silent_response(guild_id, message)
 
         if message.content == "!leave":
@@ -483,3 +488,14 @@ intents.message_content = True
 
 client = MyClient(intents=intents)
 client.run(os.getenv("DISCORD_BOT_TOKEN"))
+
+"""
+!shufflequeue
+!remove <position>
+!clearqueue
+!lyrics
+!albuminfo
+!artistinfo
+!autoplay
+!help
+"""
