@@ -1,7 +1,7 @@
 services:
-  cringelbot:
+  navi-bot:
     build: .
-    container_name: cringelbot
+    container_name: navi-bot
     restart: unless-stopped
     env_file:
       - .env

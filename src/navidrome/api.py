@@ -3,6 +3,9 @@ import requests
 import hashlib
 import random
 import string
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def generate_token(password):
     salt = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(6))
