@@ -222,7 +222,7 @@ async def remove_item(message):
         await error_response("No valid index.", guild, message)
         return
     length = len(guild.queue)
-    if queue_ind >= length:
+    if 0 < queue_ind >= (length + 1):
         await error_response("No valid index.", guild, message)
         return
     try:
