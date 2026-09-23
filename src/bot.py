@@ -55,6 +55,9 @@ class MyClient(discord.Client):
         if message.content.startswith("!playrandom"):
             await play_random(message)
 
+        if message.content.startswith("!remove "):
+            await remove_item(message)
+
 intents = discord.Intents.default()
 intents.message_content = True
 
