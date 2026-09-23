@@ -223,7 +223,7 @@ async def remove_item(message):
         return
     try:
         length = len(guild.queue)
-        removed_item = guild.queue.pop(length + 1 - queue_ind)
+        removed_item = guild.queue.pop(length - queue_ind)
         if guild.silent == 0:
             await message.channel.send(f"Removed: {removed_item['title']} by {removed_item['artist']} from queue.")
         else:
