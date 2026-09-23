@@ -212,3 +212,23 @@ async def play_random(message):
     for song in songs:
         await add_track(voice, message, guild, song)
     await silent_response(guild, message)
+
+async def remove_item(message):
+    guild = get_guild(message.guild.id)
+    try:
+        queue_ind = int(message.content.split(" ", 1)[1])
+    except (IndexError, ValueError):
+        queue_ind = None
+        await error_response("No valid index.", guild, message)
+        return
+    try:
+        removed_item = guild.queue.pop(queue_ind)
+        if guild.silent == 0:
+            await message.channel.send(f"Removed: {removed_item['title']} by {removed_item['artist']} from queue.")
+        else:
+            await silent_response(guild, message)
+    except  (IndexError, ValueError):
+        await error_response("No valid index.", guild, message)
+        return
+    
+    
