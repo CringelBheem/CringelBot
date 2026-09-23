@@ -221,17 +221,16 @@ async def remove_item(message):
         queue_ind = None
         await error_response("No valid index.", guild, message)
         return
+    length = len(guild.queue)
+    if queue_ind >= length:
+        await error_response("No valid index.", guild, message)
+        return
     try:
-        length = len(guild.queue)
-        if queue_ind >= length:
-            removed_item = guild.queue.pop(length - queue_ind)
-            if guild.silent == 0:
-                await message.channel.send(f"Removed: {removed_item['title']} by {removed_item['artist']} from queue.")
-            else:
-                await silent_response(guild, message)
+        removed_item = guild.queue.pop(length - queue_ind)
+        if guild.silent == 0:
+            await message.channel.send(f"Removed: {removed_item['title']} by {removed_item['artist']} from queue.")
         else:
-            await error_response("No valid index.", guild, message)
-            return
+            await silent_response(guild, message)
     except  (IndexError, ValueError):
         await error_response("No valid index.", guild, message)
         return
