@@ -64,6 +64,9 @@ class MyClient(discord.Client):
         if message.content == "!shufflequeue":
             await shuffle_queue(message)
 
+        if message.conent == "!autoplay":
+            await autoplay(message)
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -71,7 +74,6 @@ client = MyClient(intents=intents)
 client.run(os.getenv("DISCORD_BOT_TOKEN"))
 
 """
-!shufflequeue
 !lyrics
 !albuminfo
 !artistinfo
