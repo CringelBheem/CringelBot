@@ -64,7 +64,7 @@ class MyClient(discord.Client):
         if message.content == "!shufflequeue":
             await shuffle_queue(message)
 
-        if message.conent == "!autoplay":
+        if message.content == "!autoplay":
             await autoplay(message)
 
 intents = discord.Intents.default()
