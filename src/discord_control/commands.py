@@ -251,6 +251,17 @@ async def shuffle_queue(message):
     if guild.silent == 0:
             await message.channel.send(f"Shuffled queue.")
     await silent_response(guild, message)
-    
+
+async def autoplay(message):
+    guild = get_guild(message.guild.id)
+    if guild.autoplay == 0:
+        guild.autoplay = 1
+        if guild.silent == 0:
+            await message.channel.send(f"Autoplay enabled.")
+    else:
+        guild.autoplay = 0
+        if guild.silent == 0:
+            await message.channel.send(f"Autoplay disabled.")
+    await silent_response(guild, message)
 
     
