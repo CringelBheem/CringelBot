@@ -2,6 +2,7 @@ class GuildState:
     def __init__(self):
         self.queue = []
         self.silent = 0
+        self.autoplay = 0
         self.now_playing = {
             "title": "",
             "artist": "",

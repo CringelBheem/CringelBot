@@ -2,6 +2,7 @@ from state import get_guild
 from discord_control.responses import silent_response, error_response, join_check
 from music.player import add_track
 from navidrome.api import search_navidrome, search_album, search_random
+import random
 
 async def join(message):
     guild = get_guild(message.guild.id)
@@ -234,5 +235,22 @@ async def remove_item(message):
     except  (IndexError, ValueError):
         await error_response("No valid index.", guild, message)
         return
+
+async def clear_queue(message):
+    guild = get_guild(message.guild.id)
+    if guild.queue:
+        guild.queue.clear()
+    if guild.silent == 0:
+            await message.channel.send(f"Cleared queue.")
+    await silent_response(guild, message)
+
+async def shuffle_queue(message):
+    guild = get_guild(message.guild.id)
+    if guild.queue:
+        random.shuffle(guild.queue)
+    if guild.silent == 0:
+            await message.channel.send(f"Shuffled queue.")
+    await silent_response(guild, message)
     
+
     

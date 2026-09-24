@@ -58,6 +58,12 @@ class MyClient(discord.Client):
         if message.content.startswith("!remove "):
             await remove_item(message)
 
+        if message.content == "!clearqueue":
+            await clear_queue(message)
+
+        if message.content == "!shufflequeue":
+            await shuffle_queue(message)
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -66,8 +72,6 @@ client.run(os.getenv("DISCORD_BOT_TOKEN"))
 
 """
 !shufflequeue
-!remove <position>
-!clearqueue
 !lyrics
 !albuminfo
 !artistinfo

@@ -1,6 +1,7 @@
 from navidrome.api import build_stream_url
 import discord
 from discord import FFmpegPCMAudio
+from navidrome.api import search_random
 
 def use_queue(voice, guild):
     if len(guild.queue) > 0:
@@ -13,11 +14,18 @@ def use_queue(voice, guild):
         source = discord.FFmpegPCMAudio(url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options="-vn")
         voice.play(source, after=lambda e:use_queue(voice, guild))
     else:
-        if guild.now_playing:
+        if guild.autoplay == 1:
+            randsong = search_random(1)
+            if not randsong:
+                return
+            track = randsong[0]
+            guild.queue.insert(0, {"id": track["id"], "title": track['title'], "artist": track['artist']})
+            use_queue(voice, guild)
+        else:
             guild.now_playing["title"] = ""
             guild.now_playing["artist"]= ""
             guild.now_playing["track_id"]= ""
-        return
+            return
 
 async def add_track(voice, message, guild, track):
     track_id = track["id"]
