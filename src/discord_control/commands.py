@@ -86,6 +86,7 @@ async def stop(message):
         await message.channel.send(f"Stopped all songs.")
     if guild.queue:
         guild.queue.clear()
+    guild.autoplay = 0
     voice = message.guild.voice_client
     if voice:
         voice.stop()
