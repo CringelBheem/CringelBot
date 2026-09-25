@@ -5,67 +5,43 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+user_commands = {
+    "!join": join,
+    "!leave": leave,
+    "!play": play,
+    "!search": search,
+    "!skip": skip,
+    "!stop": stop,
+    "!pause": pause,
+    "!resume": resume,
+    "!playing": playing,
+    "!queue": queue,
+    "!parrot": parrot,
+    "!playalbum": play_album,
+    "!silent": silent,
+    "!playrandomalbum": play_random_album,
+    "!playrandom": play_random,
+    "!remove": remove_item,
+    "!clearqueue": clear_queue,
+    "!shufflequeue": shuffle_queue,
+    "!autoplay": autoplay
+}
+
+
 class MyClient(discord.Client):
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
 
     async def on_message(self, message):
-        if message.content.startswith("!join"):
-            await join(message)
-
-        if message.content == "!leave":
-            await leave(message)
-            
-        if message.content.startswith("!play "):
-            await play(message)
-                
-        if message.content.startswith("!search "):
-            await search(message)
-
-        if message.content.startswith("!skip"):
-            await skip(message)
-           
-        if message.content.startswith("!stop"):
-            await stop(message)
-
-        if message.content.startswith("!pause"):
-            await pause(message)
-
-        if message.content.startswith("!resume"):
-            await resume(message)
-
-        if message.content.startswith("!playing"):
-            await playing(message)
-            
-        if message.content.startswith("!queue"):
-            await queue(message)
-            
-        if message.content.startswith("!parrot "):
-            await parrot(message)
-
-        if message.content.startswith("!playalbum "):
-            await play_album(message)
-
-        if message.content == ("!silent"):
-            await silent(message)
-
-        if message.content == ("!playalbum"):
-            await play_random_album(message)
-
-        if message.content.startswith("!playrandom"):
-            await play_random(message)
-
-        if message.content.startswith("!remove "):
-            await remove_item(message)
-
-        if message.content == "!clearqueue":
-            await clear_queue(message)
-
-        if message.content == "!shufflequeue":
-            await shuffle_queue(message)
-
-        if message.content == "!autoplay":
-            await autoplay(message)
+        if message.author == self.user:
+            return
+        
+        if not message.content:
+            return
+        
+        command = message.content.split()[0]
+        if command in user_commands:
+            await user_commands[command](message)
 
 intents = discord.Intents.default()
 intents.message_content = True
