@@ -31,7 +31,11 @@ async def leave(message):
 async def play(message):
     guild = get_guild(message.guild.id)
     voice = message.guild.voice_client
-    query = message.content.split(" ", 1)[1]
+    try:
+        query = message.content.split(" ", 1)[1]
+    except(IndexError, ValueError):
+        await error_response("No songs found.", guild, message)
+        return
 
     if not voice:
         joined = await join_check(message, guild)
@@ -51,7 +55,12 @@ async def play(message):
     await silent_response(guild, message)
         
 async def search(message):
-    query = message.content.split(" ", 1)[1]
+    guild = get_guild(message.guild.id)
+    try:
+        query = message.content.split(" ", 1)[1]
+    except(IndexError, ValueError):
+        await error_response("No results found.", guild, message)
+        return
     results = search_navidrome(query, "search2")
     reply = ""
     artists = [a["name"] for a in results.get("artist", [])]
@@ -69,7 +78,10 @@ async def search(message):
         reply += "\n**Songs: **\n"
         for song in songs[:10]:
             reply += f" - {song}\n"
-    await message.channel.send(reply)
+    if not reply:
+        await error_response("No results found.", guild, message)
+    else:
+        await message.channel.send(reply)
 
 async def skip(message):
     guild = get_guild(message.guild.id)
@@ -134,8 +146,12 @@ async def parrot(message):
 async def play_album(message):
     guild = get_guild(message.guild.id)
     voice = message.guild.voice_client
-    query = message.content.split(" ", 1)[1]
-
+    try:
+        query = message.content.split(" ", 1)[1]
+    except(IndexError, ValueError):
+        await error_response("No album found.", guild, message)
+        return
+    
     if not voice:
         joined = await join_check(message, guild)
         if not joined:
@@ -220,9 +236,9 @@ async def remove_item(message):
     try:
         queue_ind = int(message.content.split(" ", 1)[1])
     except (IndexError, ValueError):
-        queue_ind = None
         await error_response("No valid index.", guild, message)
         return
+    
     length = len(guild.queue)
     if 0 < queue_ind >= (length + 1):
         await error_response("No valid index.", guild, message)
